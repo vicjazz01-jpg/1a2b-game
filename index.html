@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1e90ff">
+  <title>1A2B</title>
+
+  <!-- iOS Home Screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="1A2B">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root{
+      --accent:#1e90ff;
+      --bg:#f8fafc;
+      --fg:#0f172a;
+      --muted:#64748b;
+      --card:#ffffff;
+      --ok:#10b981;
+      --warn:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Helvetica Neue",Arial,"Noto Sans TC","PingFang TC","Heiti TC",sans-serif;
+      background:var(--bg); color:var(--fg);
+      display:flex; flex-direction:column;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    header{
+      padding:16px 20px; background:var(--card); border-bottom:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    header h1{margin:0; font-size:20px; letter-spacing:1px}
+    header .btn{border:0; background:var(--accent); color:#fff; padding:10px 14px; border-radius:10px; font-weight:600}
+    main{flex:1; display:flex; flex-direction:column; gap:12px; padding:16px; max-width:720px; width:100%; margin:0 auto}
+    .card{background:var(--card); border:1px solid #e2e8f0; border-radius:16px; padding:14px}
+    .current{display:flex; gap:8px; align-items:center; justify-content:center}
+    .digit{
+      width:62px; height:62px; border-radius:14px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center;
+      font-size:28px; font-weight:700; background:#fff;
+    }
+    .status{ text-align:center; font-size:14px; color:var(--muted); min-height:20px}
+    .history{max-height:34vh; overflow:auto; border-radius:12px}
+    .history table{width:100%; border-collapse:collapse}
+    .history th,.history td{padding:10px; border-bottom:1px solid #e5e7eb; font-size:16px; text-align:center}
+    .history tr:last-child td{border-bottom:0}
+    .kbd{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px}
+    .kbd button{
+      height:58px; border-radius:12px; border:1px solid #e5e7eb; background:#fff; font-size:20px; font-weight:700;
+      touch-action:manipulation;
+    }
+    .kbd button.action{ background:var(--accent); color:white; font-weight:800 }
+    .kbd button.warn{ background:var(--warn); color:white; font-weight:800 }
+    .row{display:flex; gap:10px}
+    footer{padding:8px 16px 14px; position:sticky; bottom:0; background:linear-gradient(180deg, rgba(248,250,252,0), var(--bg) 30%)}
+    .hint{font-size:13px; color:var(--muted); text-align:center; margin-top:6px}
+    .stats{display:flex; gap:10px; justify-content:center; font-size:14px; color:var(--muted)}
+    .pill{background:#eaf2ff; color:#184e97; padding:6px 10px; border-radius:999px; font-weight:600}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>1A2B</h1>
+    <button class="btn" id="btnNew">新遊戲</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="current">
+        <div class="digit" id="d0"></div>
+        <div class="digit" id="d1"></div>
+        <div class="digit" id="d2"></div>
+        <div class="digit" id="d3"></div>
+      </div>
+      <div class="status" id="status">輸入 4 個「不重複」的數字</div>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="card history">
+      <table>
+        <thead>
+          <tr><th>#</th><th>猜測</th><th>結果</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <div class="card">
+      <div class="kbd">
+        <button class="key">1</button>
+        <button class="key">2</button>
+        <button class="key">3</button>
+        <button class="key">4</button>
+        <button class="key">5</button>
+        <button class="key">6</button>
+        <button class="key">7</button>
+        <button class="key">8</button>
+        <button class="key">9</button>
+        <button class="key">0</button>
+        <button class="key warn" data-act="back">⌫</button>
+        <button class="key action" data-act="enter">送出</button>
+      </div>
+      <div class="hint">規則：A = 數字與位置皆正確；B = 數字正確但位置不對。目標是得到 4A0B。</div>
+    </div>
+  </footer>
+
+  <script>
+    // PWA register
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js');
+      });
+    }
+
+    const digits = [document.getElementById('d0'), document.getElementById('d1'), document.getElementById('d2'), document.getElementById('d3')];
+    const statusEl = document.getElementById('status');
+    const tbody = document.getElementById('tbody');
+    const stats = document.getElementById('stats');
+    const btnNew = document.getElementById('btnNew');
+    const keyEls = Array.from(document.querySelectorAll('.key'));
+
+    let answer = [];
+    let current = [];
+    let tries = 0;
+    let startTime = 0;
+
+    function randomAnswer(){
+      const pool = ['0','1','2','3','4','5','6','7','8','9'];
+      const ans = [];
+      while(ans.length<4){
+        const p = pool[Math.floor(Math.random()*pool.length)];
+        if(!ans.includes(p)){
+          if(ans.length===0 && p==='0'){ // leading zero allowed? keep it allowed. If you wish to forbid, uncomment next line.
+            // continue;
+          }
+          ans.push(p);
+        }
+      }
+      return ans;
+    }
+
+    function setStatus(msg, ok=false){
+      statusEl.textContent = msg;
+      statusEl.style.color = ok ? 'var(--ok)' : 'var(--muted)';
+    }
+
+    function paintCurrent(){
+      digits.forEach((d,i)=> d.textContent = current[i] ?? '');
+    }
+
+    function addDigit(x){
+      if(current.length>=4) return;
+      if(current.includes(x)){
+        setStatus('不能重複數字', false);
+        return;
+      }
+      current.push(x);
+      setStatus('');
+      paintCurrent();
+    }
+
+    function backspace(){
+      current.pop();
+      paintCurrent();
+    }
+
+    function checkGuess(g){
+      let A=0, B=0;
+      for(let i=0;i<4;i++){
+        if(g[i]===answer[i]) A++;
+        else if(answer.includes(g[i])) B++;
+      }
+      return {A,B};
+    }
+
+    function submit(){
+      if(current.length<4){
+        setStatus('請輸入 4 個不重複的數字', false);
+        return;
+      }
+      tries++;
+      const {A,B} = checkGuess(current);
+      const tr = document.createElement('tr');
+      const num = document.createElement('td'); num.textContent = tries;
+      const guess = document.createElement('td'); guess.textContent = current.join('');
+      const res = document.createElement('td'); res.textContent = `${A}A${B}B`;
+      tr.append(num, guess, res);
+      tbody.prepend(tr);
+
+      if(A===4){
+        const sec = Math.round((Date.now()-startTime)/1000);
+        setStatus(`成功！答案是 ${answer.join('')}，共 ${tries} 次，用時 ${sec} 秒。`, true);
+        saveBest(tries, sec);
+        updateStats();
+        // visual flash
+        document.body.style.transition = 'background 200ms ease';
+        document.body.style.background = '#eafff3';
+        setTimeout(()=>{document.body.style.background='var(--bg)'}, 220);
+      }else{
+        setStatus(A>0 ? `接近了：${A}A${B}B` : `加油：${A}A${B}B`);
+      }
+      current = [];
+      paintCurrent();
+    }
+
+    function saveBest(t, s){
+      const best = JSON.parse(localStorage.getItem('best') || '{"tries":null,"sec":null,"date":null}');
+      let updated = false;
+      if(best.tries===null || t < best.tries){ best.tries = t; updated = true; }
+      if(best.sec===null || s < best.sec){ best.sec = s; updated = true; }
+      if(updated){ best.date = new Date().toISOString(); localStorage.setItem('best', JSON.stringify(best)); }
+    }
+
+    function updateStats(){
+      const best = JSON.parse(localStorage.getItem('best') || '{"tries":null,"sec":null,"date":null}');
+      stats.innerHTML = '';
+      const pill1 = document.createElement('div'); pill1.className='pill'; pill1.textContent = `本局第 ${tries} 次`;
+      stats.appendChild(pill1);
+      if(best.tries!==null){
+        const pill2 = document.createElement('div'); pill2.className='pill'; pill2.textContent = `最少次數：${best.tries}`;
+        stats.appendChild(pill2);
+      }
+      if(best.sec!==null){
+        const pill3 = document.createElement('div'); pill3.className='pill'; pill3.textContent = `最快時間：${best.sec} 秒`;
+        stats.appendChild(pill3);
+      }
+    }
+
+    function newGame(){
+      answer = randomAnswer();
+      current = [];
+      tries = 0;
+      startTime = Date.now();
+      tbody.innerHTML='';
+      paintCurrent();
+      updateStats();
+      setStatus('輸入 4 個「不重複」的數字');
+      // console.log('ANS', answer.join('')); // 開發用
+    }
+
+    // events
+    keyEls.forEach(k=>{
+      k.addEventListener('click', ()=>{
+        const act = k.dataset.act;
+        if(act==='back') backspace();
+        else if(act==='enter') submit();
+        else addDigit(k.textContent.trim());
+      }, {passive:true});
+    });
+    btnNew.addEventListener('click', newGame);
+
+    // keyboard support
+    window.addEventListener('keydown', (e)=>{
+      if(/^[0-9]$/.test(e.key)) addDigit(e.key);
+      else if(e.key==='Backspace') backspace();
+      else if(e.key==='Enter') submit();
+    });
+
+    // start
+    newGame();
+  </script>
+</body>
+</html>
