@@ -15,13 +15,16 @@
   <link rel="manifest" href="manifest.webmanifest">
   <style>
     :root{
-      --accent:#1e90ff;
-      --bg:#f8fafc;
-      --fg:#0f172a;
-      --muted:#64748b;
-      --card:#ffffff;
-      --ok:#10b981;
-      --warn:#ef4444;
+      --accent:#E8A318;
+      --accent-ink:#3D2408;
+      --bg:#FFF6DF;
+      --fg:#2C1A0A;
+      --muted:#8A6230;
+      --card:#FFFDF6;
+      --ok:#187A50;
+      --warn:#D63D3D;
+      --line:#E8D4A8;
+      --key:#FFFBF2;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -32,35 +35,35 @@
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
     header{
-      padding:16px 20px; background:var(--card); border-bottom:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
+      padding:16px 20px; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10;
       display:flex; align-items:center; justify-content:space-between;
     }
     header h1{margin:0; font-size:20px; letter-spacing:1px}
-    header .btn{border:0; background:var(--accent); color:#fff; padding:10px 14px; border-radius:10px; font-weight:600}
+    header .btn{border:0; background:var(--accent); color:var(--accent-ink); padding:10px 14px; border-radius:10px; font-weight:700}
     main{flex:1; display:flex; flex-direction:column; gap:12px; padding:16px; max-width:720px; width:100%; margin:0 auto}
-    .card{background:var(--card); border:1px solid #e2e8f0; border-radius:16px; padding:14px}
+    .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px}
     .current{display:flex; gap:8px; align-items:center; justify-content:center}
     .digit{
-      width:62px; height:62px; border-radius:14px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center;
-      font-size:28px; font-weight:700; background:#fff;
+      width:62px; height:62px; border-radius:14px; border:2px dashed #E2C48A; display:flex; align-items:center; justify-content:center;
+      font-size:28px; font-weight:700; background:var(--key);
     }
     .status{ text-align:center; font-size:14px; color:var(--muted); min-height:20px}
     .history{max-height:34vh; overflow:auto; border-radius:12px}
     .history table{width:100%; border-collapse:collapse}
-    .history th,.history td{padding:10px; border-bottom:1px solid #e5e7eb; font-size:16px; text-align:center}
+    .history th,.history td{padding:10px; border-bottom:1px solid var(--line); font-size:16px; text-align:center}
     .history tr:last-child td{border-bottom:0}
     .kbd{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px}
     .kbd button{
-      height:58px; border-radius:12px; border:1px solid #e5e7eb; background:#fff; font-size:20px; font-weight:700;
+      height:58px; border-radius:12px; border:1px solid var(--line); background:var(--key); color:var(--fg); font-size:20px; font-weight:700;
       touch-action:manipulation;
     }
-    .kbd button.action{ background:var(--accent); color:white; font-weight:800 }
-    .kbd button.warn{ background:var(--warn); color:white; font-weight:800 }
+    .kbd button.action{ background:var(--accent); color:var(--accent-ink); font-weight:800; border-color:#D49212 }
+    .kbd button.warn{ background:var(--warn); color:#fff; font-weight:800; border-color:transparent }
     .row{display:flex; gap:10px}
-    footer{padding:8px 16px 14px; position:sticky; bottom:0; background:linear-gradient(180deg, rgba(248,250,252,0), var(--bg) 30%)}
+    footer{padding:8px 16px 14px; position:sticky; bottom:0; background:linear-gradient(180deg, rgba(255,246,223,0), var(--bg) 30%)}
     .hint{font-size:13px; color:var(--muted); text-align:center; margin-top:6px}
     .stats{display:flex; gap:10px; justify-content:center; font-size:14px; color:var(--muted)}
-    .pill{background:#eaf2ff; color:#184e97; padding:6px 10px; border-radius:999px; font-weight:600}
+    .pill{background:#FDE9B0; color:#7A4A0C; padding:6px 10px; border-radius:999px; font-weight:600}
   </style>
 </head>
 <body>
@@ -201,7 +204,7 @@
         updateStats();
         // visual flash
         document.body.style.transition = 'background 200ms ease';
-        document.body.style.background = '#eafff3';
+        document.body.style.background = '#FFF3C4';
         setTimeout(()=>{document.body.style.background='var(--bg)'}, 220);
       }else{
         setStatus(A>0 ? `接近了：${A}A${B}B` : `加油：${A}A${B}B`);
